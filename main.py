@@ -1,17 +1,15 @@
 from base import Weapon
-from characters import Man, Woman
+from characters import Man, Woman, Child
 
-man1 = Man("noor", 20, Weapon.SWORD, Weapon.SHIELD)
-man2 = Man("ali", 20, Weapon.BOW)
+woman: Woman = Woman("jana", 20, Weapon.BOW, Weapon.HANDS)
+man: Man = Man("noor", 20, Weapon.SWORD, Weapon.SHIELD)
+child: Child = Child("ali", 20)
 
-woman1 = Woman("jana", 20, Weapon.BOW, Weapon.HANDS, defense=20)
+man.attack(woman)
+woman.attack(man)
 
-man1.attack(woman1)
-man2.attack(woman1)
-man1.attack(woman1)
-man1.attack(woman1, used_weapon=Weapon.SHIELD)
-man1.attack(woman1)
-man2.attack(woman1)
-man2.attack(woman1)
+man.attack(woman, used_weapon=Weapon.BOW)
+woman.attack(man, used_weapon=Weapon.BOW)
 
-woman1.attack(man1, used_weapon=Weapon.BOW)
+woman.attack(child)
+man.attack(child)

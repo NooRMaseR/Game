@@ -1,4 +1,5 @@
 from typing import LiteralString, Protocol
+from frames import FULL_FIGHTING_FRAME
 from abc import ABC, abstractmethod
 from enum import IntEnum
 import click
@@ -14,7 +15,8 @@ class Weapon(IntEnum):
         return self._name_.lower()
 
 
-class Dayable(Protocol):
+class Dieable(Protocol):
+    "a Protocol for an object to make it able to die"
     
     name: str
     
@@ -25,21 +27,23 @@ class Dayable(Protocol):
     def health(self, value: int) -> None: ...
     
     @property
-    def defense(self) -> int: ...
+    def armor(self) -> int: ...
     
-    @defense.setter
-    def defense(self, value: int) -> None: ...
+    @armor.setter
+    def armor(self, value: int) -> None: ...
     
     @property
     def is_alive(self) -> bool: ...
 
 
 class AliveObject(ABC):
-    def __init__(self, name: str, age: int, health: int = 100, defense: int = 0) -> None:
+    "Base class for any alive object"
+    
+    def __init__(self, name: str, age: int, health: int = 100, armor: int = 0) -> None:
         super().__init__()
         self.name: str = name
         self.__health: int = health
-        self.__defense: int = defense
+        self.__armor: int = armor
         self.__age: int = age
         
     @property
@@ -56,13 +60,12 @@ class AliveObject(ABC):
         self.__health = max(value, 0)
         
     @property
-    def defense(self) -> int: 
-        return self.__defense
+    def armor(self) -> int: 
+        return self.__armor
     
-    @defense.setter
-    def defense(self, value: int) -> None:
-        assert 0 <= value <= 100, "defense must be between 1 and 100"
-        self.__defense = value
+    @armor.setter
+    def armor(self, value: int) -> None:
+        self.__armor = max(value, 0)
         
     @property
     def age(self) -> int: 
@@ -75,17 +78,25 @@ class AliveObject(ABC):
         
     
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}(\n\tName: {self.name}\n\tHealth: {self.health}\n\tDefense: {self.defense}\n\tis alive: {self.is_alive}\n)"
+        return f"""
+{self.__class__.__name__}(
+    Name: {self.name}
+    Health: {self.health}
+    armor: {self.armor}
+    is alive: {self.is_alive}
+)"""
     
     
-  
+
 class Attacker(ABC):
+    "Abstract class for any object that can attack"
     
-    def attack(self, target: Dayable, used_weapon: Weapon | None = None) -> None: 
-        """Attack a `AliveObject`
+    def attack(self, target: Dieable, used_weapon: Weapon | None = None) -> None: 
+        """Attack `AliveObject`\n
+        make sure that the object will inherit this class has `is_alive` property
 
         Args:
-            target (Dayable): an Object that has protocol `daiable` or somthing able to die
+            target (Dayable): an Object that has protocol `dieable` or somthing able to die
             used_weapon (Weapon): The weapon to use to attack the target, the current object must have this weapon, otherwise will use his hands or a sword if he has one
         """
         
@@ -98,15 +109,24 @@ class Attacker(ABC):
             return
         
         weapon: Weapon = self.select_weapon(used_weapon)
-        damage: int =  self.calculate_damage(weapon, target.defense)
+        damage: int =  self.calculate_damage(weapon, target.armor)
+        click.echo(FULL_FIGHTING_FRAME)
         
-        target.health -= damage
-        target.defense -= damage if damage <= target.defense else target.defense
-        click.echo(f"{target.name} has been damaged by {weapon}% using {weapon.name}")
-        click.echo(f"{target.name}'s health {target.health}% and defense {target.defense}")
+        if target.armor > 0:
+            if damage > target.armor:
+                target.health -= (damage - target.armor)
+            target.armor -= damage
+        else:
+            target.health -= damage
+        
+        click.echo(f"{target.name} has been damaged by {damage}% using {weapon.name}")
+        click.echo(f"{target.name}'s health {target.health}% and armor {target.armor}%")
         
         if not target.is_alive:
             click.echo(f"{target.name} died...")
+        
+        click.echo("\n")
+    
     
     def add_weapon(self, weapon: Weapon) -> None: 
         """a method to add an extra weapon
@@ -119,6 +139,7 @@ class Attacker(ABC):
         
         self.weapons = (*self.weapons, weapon)
     
+    
     def remove_weapon(self, weapon: Weapon) -> None:
         """a method to remove a weapon
 
@@ -129,6 +150,7 @@ class Attacker(ABC):
         weapons = list(self.weapons)
         weapons.remove(weapon)
         self.weapons = tuple(weapons)
+    
     
     def select_weapon(self, weapon: Weapon | None) -> Weapon:
         """a method to select a weapon if the object has it
@@ -147,26 +169,29 @@ class Attacker(ABC):
         else:
             return weapons[0] if len(weapons) > 0 else Weapon.HANDS
     
-    def calculate_damage(self, damage: int, defense: int) -> int:
-        """a method to calculate a the damage will the object takes by reducing the damage using object `defense`
+    
+    def calculate_damage(self, damage: int, armor: int) -> int:
+        """a method to calculate a the damage will the object takes by reducing the damage using object `armor`
 
         Args:
             damage (int): the weapon damage
-            defense (int): the target defense
+            armor (int): the target armor
 
         Returns:
             int: the damage will be used
         """
-        return int(max(damage - ((defense / 100) * damage), 0))
+        return int(max(damage - ((damage / 100) * armor), 0))
+    
     
     @property
     @abstractmethod
     def weapons(self) -> tuple[Weapon, ...]:
-        """a property to control the weapons getter and setter
+        """a property to get the weapons
 
         Returns:
-            tuple[Weapon, ...]: the object weapons
+            tuple[Weapon]: the object weapons
         """
+    
     
     @weapons.setter
     @abstractmethod
@@ -177,5 +202,8 @@ class Attacker(ABC):
     @abstractmethod
     def max_weapons(self) -> int: ...
         
-    def check_weapons_limit(self, length: int) -> bool:
-        return length <= self.max_weapons
+        
+    def check_weapons_limit(self, length: int) -> None:
+        if not length <= self.max_weapons:
+            raise ValueError(f"{self.__class__.__name__} Cannot Hold More Than {self.max_weapons} weapons!!!!")
+        
