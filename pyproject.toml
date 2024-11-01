@@ -1,0 +1,10 @@
+[project]
+name = "game"
+version = "0.1.0"
+description = "A Test Game"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.7",
+    "ruff>=0.7.2",
+]

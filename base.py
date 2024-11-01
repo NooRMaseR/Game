@@ -6,8 +6,9 @@ import click
 
 class Weapon(IntEnum):
     SWORD = 30
-    BOW = 10
+    CLAWS = 25
     SHIELD = 15
+    BOW = 10
     HANDS = 5
 
     @property
@@ -86,7 +87,6 @@ class AliveObject(ABC):
     is alive: {self.is_alive}
 )"""
     
-    
 
 class Attacker(ABC):
     "Abstract class for any object that can attack"
@@ -96,7 +96,7 @@ class Attacker(ABC):
         make sure that the object will inherit this class has `is_alive` property
 
         Args:
-            target (Dayable): an Object that has protocol `dieable` or somthing able to die
+            target (Dieable): an Object that has protocol `dieable` or somthing able to die
             used_weapon (Weapon): The weapon to use to attack the target, the current object must have this weapon, otherwise will use his hands or a sword if he has one
         """
         
@@ -119,7 +119,7 @@ class Attacker(ABC):
         else:
             target.health -= damage
         
-        click.echo(f"{target.name} has been damaged by {damage}% using {weapon.name}")
+        click.echo(f"{target.name} has been damaged by {damage}% using {weapon.name} from a {self.__class__.__name__} ({self.name})")
         click.echo(f"{target.name}'s health {target.health}% and armor {target.armor}%")
         
         if not target.is_alive:
@@ -207,3 +207,19 @@ class Attacker(ABC):
         if not length <= self.max_weapons:
             raise ValueError(f"{self.__class__.__name__} Cannot Hold More Than {self.max_weapons} weapons!!!!")
         
+        
+class BaseDangerAnimal(AliveObject, Attacker):
+    def __init__(self, name: str, age: int, health: int = 100, armor: int = 30) -> None:
+        super().__init__(name, age, health, armor)
+        
+    @property
+    def weapons(self) -> tuple[Weapon, ...]:
+        return (Weapon.CLAWS,)
+
+    @weapons.setter
+    def weapons(self, weapons: tuple[Weapon, ...]) -> None:
+        raise ValueError(f"Can not Change the {self.__class__.__name__} Weapon")
+
+    @property
+    def max_weapons(self) -> int:
+        return 1

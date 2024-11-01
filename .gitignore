@@ -1,2 +1,4 @@
 __pycache__
 test.py
+.ruff_cache
+uv.lock
